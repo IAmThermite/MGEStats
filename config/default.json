@@ -1,0 +1,17 @@
+{  
+  "steam": {
+    "apikey": "steamapikey"
+  },
+  
+  "api": {
+    "address": "127.0.0.1",
+    "port": "8080",
+    "id": "APIClientID",
+    "secret": "APIClientSecret"
+  },
+  
+  "server": {
+    "session-name": "SessionName",
+    "session-secret": "SessionSecret"
+  }
+}
