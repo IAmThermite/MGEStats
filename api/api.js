@@ -66,13 +66,30 @@ app.get('/api/authorized/', (req, res) => {
 app.get('/api/user/:steamid', (req, res) => {
   logger.log('info', 'GET /api/user/:steamid');
 
+  var user = {};
+  
   const query = `SELECT * FROM users WHERE steamid = ${mysql.escape(req.params.steamid)}`;
+  
   con.query(query, (err, results) => {
     if (err) {
       logger.log('error', err);
       res.send('-1');
     } else {
-      res.send(results);
+      user.user = results
+      const query2 = `SELECT * FROM mgemod_duels
+                    WHERE winner = ${mysql.escape(req.params.steamid)}
+                    OR loser = ${mysql.escape(req.params.steamid)}`;
+      
+      con.query(query2, (err, results2) => {
+        if (err) {
+          logger.log('error', err);
+          res.send('-1');
+        } else {
+          user.matches = results2;
+          res.send(user);
+          // res.send(JSON.stringify(user));
+        }
+      });
     }
   });
 });
@@ -99,8 +116,8 @@ app.get('/api/matches/:steamid', (req, res) => {
   logger.log('info', 'GET /api/matches/:steamid');
 
   const query = `SELECT * FROM mgemod_duels
-                 WHERE winner = ${mysql.escape(req.params.steamid)}
-                 OR loser = ${mysql.escape(req.params.steamid)}`;
+                WHERE winner = ${mysql.escape(req.params.steamid)}
+                OR loser = ${mysql.escape(req.params.steamid)}`;
   con.query(query, (err, results) => {
     if (err) {
       logger.log('error', err);
@@ -138,8 +155,8 @@ app.post('/api/user/', (req, res) => {
   const avatar = req.body.avatar;
 
   const query = `INSERT INTO users (alias, steamid, avatar)
-                 VALUES ( ${mysql.escape(alias)}, ${mysql.escape(steamid)}, ${mysql.escape(avatar)})
-                 ON DUPLICATE KEY UPDATE alias=${mysql.escape(alias)}, avatar=${mysql.escape(avatar)}`;
+                VALUES ( ${mysql.escape(alias)}, ${mysql.escape(steamid)}, ${mysql.escape(avatar)})
+                ON DUPLICATE KEY UPDATE alias=${mysql.escape(alias)}, avatar=${mysql.escape(avatar)}`;
 
   con.query(query, (err, result) => {
     if (err) {
@@ -160,7 +177,7 @@ app.post('/api/users/search/', (req, res) => {
   const sortby = req.body.sortby;
 
   var query = `SELECT * FROM users
-               WHERE alias LIKE ${mysql.escape(search)}`;
+              WHERE alias LIKE ${mysql.escape(search)}`;
 
   con.query(query, (err, result) => {
     if (err) {

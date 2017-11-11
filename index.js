@@ -1,8 +1,9 @@
 const express = require('express');
 const hbs = require('express-handlebars');
 const config = require('config');
-const request = require("request");
-const session = require('cookie-session')
+const request = require('request-promise');
+const session = require('cookie-session');
+const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const passport = require('passport');
 const SteamStrategy = require('passport-steam').Strategy;
@@ -10,20 +11,14 @@ const winston = require('winston');
 
 const app = express();
 
-
-const logger = new(winston.Logger)({
-  transports: [
-    new winston.transports.Console({ level: 'info' }),
-    new winston.transports.File({
-      level: 'info',
-      filename: './logs/combined.log',
-    }),
-  ],
-});
-
-
 const serverconf = config.get('server');
+const apiconf = config.get('api');
 
+
+app.engine('hbs', hbs({extname: 'hbs', defaultLayout: 'main'}));
+app.set('view engine', 'hbs');
+
+app.use(express.static('public'));
 
 app.use(session({
     secret: serverconf.get('session-secret'),
@@ -36,6 +31,137 @@ app.use(session({
   })
 );
 
+const logger = new(winston.Logger)({
+  transports: [
+    new winston.transports.Console({ level: 'info' }),
+    new winston.transports.File({
+      level: 'info',
+      filename: './logs/combined.log',
+    }),
+  ],
+});
+
+
+const getApiToken = () => {
+  return new Promise((fufill, reject) => {
+    const options = { method: 'POST',
+      url: `${apiconf.get('auth')}`,
+      headers: { 'content-type': 'application/json' },
+      body: `{
+        "client_id": "${apiconf.get('id')}",
+        "client_secret": "${authConfig.get('secret')}",
+        "audience": "${authConfig.get('audience')}",
+        "grant_type": "client_credentials"
+      }`
+    };
+
+    request(options).then((body) => {
+      fufill(body)
+    }).catch((err) => {
+      reject(1);
+    });
+    // request(authOptions, (req, res) => {
+    //   const body = JSON.parse(res.body);
+    //   if (!body.error) {
+    //     const apiToken = `${body.token_type} ${body.access_token}`;
+    //     logger.log('info', 'API Auth successful!');
+    //     fufill(apiToken);
+    //   } else {
+    //     logger.log('error', 'Could not get API token. Auth failed!');
+    //     reject(1);
+    //   }
+    // });
+  });
+};
+
+const getUserProfile = (steamid) => {
+  return new Promise((fufill, reject) => {
+    getApiToken().then((token) => {
+      const options = {
+        method: 'GET',
+        url: `${apiconf.get('address')}:${apiconf.get('port')}/api/user/${steamid}`,
+        headers: {
+          authorization: `${token}`,
+        }
+      };
+      
+      request(options).then((body) => {
+        fufill(body);
+      }).catch((err) => {
+        reject(2);
+      });
+    }).catch(() => {
+      reject(1);
+    });
+  });
+}
+
+const getUserMatches = (steamid) => {
+  return new Promise((fufill, reject) => {
+    getApiToken().then((token) => {
+      const options = {
+        method: 'GET',
+        url: `${apiconf.get('address')}:${apiconf.get('port')}/api/matches/${steamid}`,
+        headers: {
+          authorization: `${token}`,
+        }
+      };
+      
+      request(options).then((body) => {
+        fufill(body);
+      }).catch((err) => {
+        reject(2);
+      });
+    }).catch(() => {
+      reject(1);
+    });
+  });
+}
+
+const getAllMatches = (steamid) => {
+  return new Promise((fufill, reject) => {
+    getApiToken().then((token) => {
+      const options = {
+        method: 'GET',
+        url: `${apiconf.get('address')}:${apiconf.get('port')}/matches`,
+        headers: {
+          authorization: `${token}`,
+        }
+      };
+      
+      request(options).then((body) => {
+        fufill(body);
+      }).catch((err) => {
+        reject(2);
+      });
+    }).catch(() => {
+      reject(1);
+    });
+  });
+}
+
+const getTop = () => {
+  return new Promise((fufill, reject) => {
+    getApiToken().then((token) => {
+      const options = {
+        method: 'GET',
+        url: `${apiconf.get('address')}:${apiconf.get('port')}/api/top10/`,
+        headers: {
+          authorization: `${token}`,
+        }
+      };
+      
+      request(options).then((body) => {
+        fufill(body);
+      }).catch((err) => {
+        reject(2);
+      });
+    }).catch(() => {
+      reject(1);
+    });
+  });
+}
+
 // Simple route middleware to ensure user is authenticated.
 //   Use this route middleware on any resource that needs to be protected.  If
 //   the request is authenticated (typically via a persistent login session),
@@ -45,7 +171,7 @@ const ensureAuthenticated = (req, res, next) => {
   if (req.isAuthenticated()) {
     next();
   } else {
-
+    res.redirect('/login/');
   }
 }
 
@@ -72,7 +198,7 @@ passport.deserializeUser((obj, done) => {
 passport.use(new SteamStrategy({
     returnURL: 'http://localhost:3000/auth/steam/return',
     realm: 'http://localhost:3000/',
-    apiKey: config.get('steam-api-key'),
+    apiKey: config.get('steam.apikey'),
   },
   (identifier, profile, done) => {
     // asynchronous verification, for effect...
@@ -93,9 +219,37 @@ passport.use(new SteamStrategy({
 app.use(passport.initialize());
 app.use(passport.session());
 
+
 //
-// OTHER ROUTES HERE
+// MAIN ROUTES
 //
+app.get('/', (req, res) => {
+  res.render('home', {
+    page: 'Home',
+    user: req.user || undefined,
+  })
+});
+
+app.get('/login/', (res, req) => {
+  res.render('login', {
+    page: 'Login',
+  });
+});
+
+app.get('/user/me', ensureAuthenticated, (req, res) => {
+  getUserMatches(req.user.id).then((output) => {
+    res.render('user', {
+      page: req.user.displayName,
+      user: req.user,
+      matches: output,
+    });
+  }).error((err) => {
+    res.render('error', {
+      code: 500,
+      error: err,
+    });
+  })
+});
 
 // GET /logout
 //  Ends the session with the user and clears
@@ -105,16 +259,19 @@ app.get('/logout', (req, res) => {
   res.redirect('/');
 });
 
+//
+// END MAIN ROUTES
+//
+
 // GET /auth/steam
 //   Use passport.authenticate() as route middleware to authenticate the
 //   request.  The first step in Steam authentication will involve redirecting
 //   the user to steamcommunity.com.  After authenticating, Steam will redirect the
 //   user back to this application at /auth/steam/return
-app.get('/auth/steam',
-  passport.authenticate('steam', { failureRedirect: '/' }),
-  (req, res) => {
-    res.redirect('/user/me');
-});
+app.get('/auth/steam', passport.authenticate('steam', { failureRedirect: '/' }), (req, res) => {
+  res.redirect('/');
+  }
+);
 
 // GET /auth/steam/return
 //   Use passport.authenticate() as route middleware to authenticate the
@@ -124,7 +281,7 @@ app.get('/auth/steam',
 app.get('/auth/steam/return',
   passport.authenticate('steam', { failureRedirect: '/' }),
   (req, res) => {
-    res.redirect('/user/me');
+    res.redirect('/');
 });
 
 

@@ -60,3 +60,6 @@ typings/
 # config
 config/production.json
 api/config/production.json
+
+# tests
+test/

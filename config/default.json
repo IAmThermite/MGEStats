@@ -7,7 +7,9 @@
     "address": "127.0.0.1",
     "port": "8080",
     "id": "APIClientID",
-    "secret": "APIClientSecret"
+    "secret": "APIClientSecret",
+    "audience": "http://DOMAIN.com/",
+    "auth": "https://AUTH0URL.com/"
   },
   
   "server": {
