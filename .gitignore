@@ -58,8 +58,8 @@ typings/
 .env
 
 # config
-config/production.json
-api/config/production.json
+production.json
+test.json
 
 # tests
 test/

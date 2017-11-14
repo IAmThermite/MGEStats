@@ -14,8 +14,29 @@ const app = express();
 const serverconf = config.get('server');
 const apiconf = config.get('api');
 
+const logger = new(winston.Logger)({
+  transports: [
+    new winston.transports.Console({ level: 'info' }),
+    new winston.transports.File({
+      level: 'info',
+      filename: './logs/combined.log',
+    }),
+  ],
+});
 
-app.engine('hbs', hbs({extname: 'hbs', defaultLayout: 'main'}));
+app.engine('hbs', hbs({extname: 'hbs', defaultLayout: 'main', 
+  helpers: {
+    equal: (lvalue, rvalue, options) => {
+      if (arguments.length < 3)
+        throw new Error("Helper equal needs 2 parameters");
+      if( lvalue!=rvalue ) {
+        return options.inverse(this);
+      } else {
+        return options.fn(this);
+      }
+    }
+  }
+}));
 app.set('view engine', 'hbs');
 
 app.use(express.static('public'));
@@ -31,17 +52,6 @@ app.use(session({
   })
 );
 
-const logger = new(winston.Logger)({
-  transports: [
-    new winston.transports.Console({ level: 'info' }),
-    new winston.transports.File({
-      level: 'info',
-      filename: './logs/combined.log',
-    }),
-  ],
-});
-
-
 const getApiToken = () => {
   return new Promise((fufill, reject) => {
     const options = { method: 'POST',
@@ -56,21 +66,10 @@ const getApiToken = () => {
     };
 
     request(options).then((body) => {
-      fufill(body)
+      fufill(body);
     }).catch((err) => {
-      reject(1);
+      reject('1 Cannot connect to API');
     });
-    // request(authOptions, (req, res) => {
-    //   const body = JSON.parse(res.body);
-    //   if (!body.error) {
-    //     const apiToken = `${body.token_type} ${body.access_token}`;
-    //     logger.log('info', 'API Auth successful!');
-    //     fufill(apiToken);
-    //   } else {
-    //     logger.log('error', 'Could not get API token. Auth failed!');
-    //     reject(1);
-    //   }
-    // });
   });
 };
 
@@ -86,12 +85,16 @@ const getUserProfile = (steamid) => {
       };
       
       request(options).then((body) => {
-        fufill(body);
+        if(body === '-1') {
+          reject('-1 Bad query.');
+        } else {
+          fufill(body);
+        }
       }).catch((err) => {
-        reject(2);
+        reject('2 Bad API Auth');
       });
-    }).catch(() => {
-      reject(1);
+    }).catch((err) => {
+      reject('1 Cannot connect to API');
     });
   });
 }
@@ -108,34 +111,68 @@ const getUserMatches = (steamid) => {
       };
       
       request(options).then((body) => {
-        fufill(body);
+        if(body === '-1') {
+          reject('-1 Bad query.');
+        } else {
+          fufill(body);
+        }
       }).catch((err) => {
-        reject(2);
+        reject('2 Bad API Auth');
       });
     }).catch(() => {
-      reject(1);
+      reject('1 Cannot connect to API');
     });
   });
 }
 
-const getAllMatches = (steamid) => {
+const getAllUsers = (page) => {
   return new Promise((fufill, reject) => {
     getApiToken().then((token) => {
       const options = {
         method: 'GET',
-        url: `${apiconf.get('address')}:${apiconf.get('port')}/matches`,
+        url: `${apiconf.get('address')}:${apiconf.get('port')}/api/users/${page}`,
         headers: {
           authorization: `${token}`,
         }
       };
       
       request(options).then((body) => {
-        fufill(body);
+        if(body === '-1') {
+          reject('-1 Bad query.');
+        } else {
+          fufill(body);
+        }
       }).catch((err) => {
-        reject(2);
+        reject('2 Bad API Auth');
       });
-    }).catch(() => {
-      reject(1);
+    }).catch((err) => {
+      reject('1 Cannot connect to API');
+    });
+  });
+}
+
+const getLatestMatches = () => {
+  return new Promise((fufill, reject) => {
+    getApiToken().then((token) => {
+      const options = {
+        method: 'GET',
+        url: `${apiconf.get('address')}:${apiconf.get('port')}/matches/`,
+        headers: {
+          authorization: `${token}`,
+        }
+      };
+      
+      request(options).then((body) => {
+        if(body === '-1') {
+          reject('-1 Bad query.');
+        } else {
+          fufill(body);
+        }
+      }).catch((err) => {
+        reject('2 Bad API Auth');
+      });
+    }).catch((err) => {
+      reject('1 Cannot connect to API');
     });
   });
 }
@@ -152,12 +189,16 @@ const getTop = () => {
       };
       
       request(options).then((body) => {
-        fufill(body);
+        if(body === '-1') {
+          reject('-1 Bad query.');
+        } else {
+          fufill(body);
+        }
       }).catch((err) => {
-        reject(2);
+        reject('2 Bad API Auth');
       });
-    }).catch(() => {
-      reject(1);
+    }).catch((err) => {
+      reject('1 Cannot connect to API');
     });
   });
 }
@@ -225,30 +266,15 @@ app.use(passport.session());
 //
 app.get('/', (req, res) => {
   res.render('home', {
-    page: 'Home',
+    page: `${config.get('appname')} | Home`,
     user: req.user || undefined,
   })
 });
 
-app.get('/login/', (res, req) => {
+app.get('/login/', (req, res) => {
   res.render('login', {
-    page: 'Login',
+    page: `${config.get('appname')} | Login`,
   });
-});
-
-app.get('/user/me', ensureAuthenticated, (req, res) => {
-  getUserMatches(req.user.id).then((output) => {
-    res.render('user', {
-      page: req.user.displayName,
-      user: req.user,
-      matches: output,
-    });
-  }).error((err) => {
-    res.render('error', {
-      code: 500,
-      error: err,
-    });
-  })
 });
 
 // GET /logout
@@ -257,6 +283,116 @@ app.get('/user/me', ensureAuthenticated, (req, res) => {
 app.get('/logout', (req, res) => {
   req.logout();
   res.redirect('/');
+});
+
+// GET /users/:pg
+//  A list of 100 users will be displayed
+app.get('/users/:pg', (req, res) => {
+  getAllUsers(req.params.pg).then((output) => {
+    res.render('users', {
+      page: `${config.get('appname')} | Users`,
+      users: output,
+    });
+  }).catch((err) => {
+    res.render('error', {
+      page: `${config.get('appname')} | Error`,
+      code: 500,
+      error: err,
+    });
+  });
+});
+
+// GET /user/me/
+//  The profile of the logged in user
+//  req.user
+app.get('/user/me/', ensureAuthenticated, (req, res) => {
+  getUserMatches(req.user.id).then((output) => {
+    res.render('user', {
+      page: `${config.get('appname')} | ${req.user.displayName}`,
+      user: req.user,
+      matches: output,
+    });
+  }).catch((err) => {
+    res.render('error', {
+      page: `${config.get('appname')} | Error`,
+      code: 500,
+      error: err,
+    });
+  });
+});
+
+// GET /user/:steamid
+//  Will locate the profile of the corresponding user
+//  with parameter :steamid
+app.get('/user/:steamid', (req, res) => {
+  getUserProfile(req.params.steamid).then((output) => {
+    res.render('user', {
+      page: `${config.get('appname')} | ${output.user.name}`,
+      user: output.user,
+      matches: output.matches,
+    });
+  }).catch((err) => {
+    res.render('error', {
+      page: `${config.get('appname')} | Error`,
+      code: 500,
+      error: err,
+    });
+  });
+});
+
+// GET /top10/
+//  Will display the top 10 players in the db
+app.get('/top10/', (req, res) => {
+  getTop().then((output) => {
+    res.render('top', {
+      page: `${config.get('appname')} | Top 10 Players`,
+      players: output,
+      user: req.user || undefined,
+    });
+  }).catch((err) => {
+    res.render('error', {
+      page: `${config.get('appname')} | Error`,
+      code: 500,
+      error: err,
+    });
+  });
+});
+
+// GET /matches/
+//  Will display the last 100 matches played
+app.get('/matches/', (req, res) => {
+  getLatestMatches().then((output) => {
+    res.render('match', {
+      page: `${config.get('appname')} | Recent Matches`,
+      matches: output,
+      user: req.user || undefined,
+    });
+  }).catch((err) => {
+    res.render('error', {
+      page: `${config.get('appname')} | Error`,
+      code: 500,
+      error: err,
+    });
+  });
+});
+
+// GET /matches/:steamid
+//  Will display all matches played by the player
+//  specified by :steamid
+app.get('/matches/:steamid', (req, res) => {
+  getUserMatches().then((output) => {
+    res.render('match', {
+      page: `${config.get('appname')} | User Matches`,
+      matches: output,
+      user: req.user || undefined,
+    });
+  }).catch((err) => {
+    res.render('error', {
+      page: `${config.get('appname')} | Error`,
+      code: 500,
+      error: err,
+    });
+  });
 });
 
 //
@@ -268,8 +404,9 @@ app.get('/logout', (req, res) => {
 //   request.  The first step in Steam authentication will involve redirecting
 //   the user to steamcommunity.com.  After authenticating, Steam will redirect the
 //   user back to this application at /auth/steam/return
-app.get('/auth/steam', passport.authenticate('steam', { failureRedirect: '/' }), (req, res) => {
-  res.redirect('/');
+app.get('/auth/steam', passport.authenticate('steam', { failureRedirect: '/' }),
+  (req, res) => {
+    res.redirect('/');
   }
 );
 

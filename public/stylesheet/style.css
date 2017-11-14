@@ -1,0 +1,43 @@
+a {
+  color: #000;
+}
+
+p .title {
+  font-size: 48px;
+}
+
+.container {
+  background-color: rgb(129, 226, 255);
+  padding: 20px;
+  margin: auto;
+  border-radius: 10px;
+  width: 976px;
+}
+.navbar ul {
+  background-color: rgb(226, 110, 110);
+  padding: 5px 0px;
+  margin: 0px;
+  border-radius: 5px;
+}
+.navbar ul li {
+  display: inline;
+  list-style-type: none;
+  font-size: 30px;
+}
+.navbar ul li a {
+  color: #000;
+  text-decoration: none;
+  padding: 5px;
+  margin: 10px;
+}
+.navbar ul li a:hover {
+  background-color: rgb(230, 47, 47);
+}
+
+.footer {
+  background-color: rgb(255, 131, 29);
+  font-size: 20px;
+  padding: 5px;
+  margin: 10px 0px;
+  border-radius: 5px;
+}

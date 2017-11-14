@@ -36,7 +36,7 @@ const jwtCheck = jwt({
   algorithms: ['RS256'],
 });
 
-if (process.env.NODE_ENV !== 'production') { // disabe authentication during testing
+if (process.env.NODE_ENV !== 'test') { // disabe authentication during testing
   app.use(jwtCheck);
 }
 
@@ -60,6 +60,24 @@ app.get('/api/authorized/', (req, res) => {
   res.send('AUTHORIZED');
 });
 
+// GET /api/users/
+//  Will get the user with the corresponding
+//  steamid from the database
+app.get('/api/users/:pg', (req, res) => {
+  logger.log('info', 'GET /api/users/');
+  const query = `SELECT * FROM users WHERE steamid = ${mysql.escape(req.params.steamid)}
+                LIMIT 100 OFFSET0+${mysql.escape(req.params.pg)}*100}`;
+  
+  con.query(query, (err, results) => {
+    if (err) {
+      logger.log('error', err);
+      res.send('-1');
+    } else {
+      res.send(results);
+    }
+  });
+});
+
 // GET /api/user/:steamid
 //  Will get the user with the corresponding
 //  steamid from the database
@@ -68,17 +86,19 @@ app.get('/api/user/:steamid', (req, res) => {
 
   var user = {};
   
-  const query = `SELECT * FROM users WHERE steamid = ${mysql.escape(req.params.steamid)}`;
+  const query = `SELECT * FROM users, mgemod_stats WHERE users.steamid = ${mysql.escape(req.params.steamid)}
+                AND mgemod_stats.steamid = ${mysql.escape(req.params.steamid)}`;
   
   con.query(query, (err, results) => {
     if (err) {
       logger.log('error', err);
       res.send('-1');
     } else {
+      logger.log('info', results); // DEBUG
       user.user = results
       const query2 = `SELECT * FROM mgemod_duels
-                    WHERE winner = ${mysql.escape(req.params.steamid)}
-                    OR loser = ${mysql.escape(req.params.steamid)}`;
+                      WHERE winner = ${mysql.escape(req.params.steamid)}
+                      OR loser = ${mysql.escape(req.params.steamid)}`;
       
       con.query(query2, (err, results2) => {
         if (err) {
@@ -96,7 +116,7 @@ app.get('/api/user/:steamid', (req, res) => {
 
 // GET /api/matches/
 //  Lists past 100 matches
-app.get('/api/matches', (req, res) => {
+app.get('/api/matches/', (req, res) => {
   logger.log('info', 'GET /api/matches/');
 
   const query = `SELECT * FROM mgemod_duels ORDER BY id DESC LIMIT 100`;
@@ -117,7 +137,7 @@ app.get('/api/matches/:steamid', (req, res) => {
 
   const query = `SELECT * FROM mgemod_duels
                 WHERE winner = ${mysql.escape(req.params.steamid)}
-                OR loser = ${mysql.escape(req.params.steamid)}`;
+                OR loser = ${mysql.escape(req.params.steamid)}`; // Alter to only return last 100?
   con.query(query, (err, results) => {
     if (err) {
       logger.log('error', err);

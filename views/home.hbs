@@ -1,7 +1,5 @@
-<h1>{{page}}</h1>
-<a href="/auth/steam">Steam Login</a>
-
 {{#if user}}
-  <p>{{user.displayName}}</p>
-  <a href="/logout">Logout</a>
+  <p class="title">Welcome {{user.displayName}}.</p>
+{{else}}
+  <p>Welcome Guest.</p>
 {{/if}}

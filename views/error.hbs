@@ -1,0 +1,10 @@
+<p>ERROR</p>
+{{#equal code 500}}
+  <p>{{code}} This is a bug! Contact developer!</p>
+{{/equal}}
+
+{{#equal code 400}}
+  <p>{{code}} Something went wrong on your end, try again or contact a developer</p>
+{{/equal}}
+
+<p>{{error}}</p>
