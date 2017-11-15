@@ -59,16 +59,21 @@ const getApiToken = () => {
       headers: { 'content-type': 'application/json' },
       body: `{
         "client_id": "${apiconf.get('id')}",
-        "client_secret": "${authConfig.get('secret')}",
-        "audience": "${authConfig.get('audience')}",
+        "client_secret": "${apiconf.get('secret')}",
+        "audience": "${apiconf.get('audience')}",
         "grant_type": "client_credentials"
       }`
     };
 
     request(options).then((body) => {
-      fufill(body);
+      try {
+        response = JSON.parse(body);
+        fufill(`${response.token_type} ${response.access_token}`);
+      } catch(e) {
+        reject('-2 Internal JSON parse error');
+      }
     }).catch((err) => {
-      reject('1 Cannot connect to API');
+      reject('3 Cannot connect to AUTH0');
     });
   });
 };
@@ -78,7 +83,7 @@ const getUserProfile = (steamid) => {
     getApiToken().then((token) => {
       const options = {
         method: 'GET',
-        url: `${apiconf.get('address')}:${apiconf.get('port')}/api/user/${steamid}`,
+        url: `http://${apiconf.get('address')}:${apiconf.get('port')}/api/user/${steamid}`,
         headers: {
           authorization: `${token}`,
         }
@@ -104,7 +109,7 @@ const getUserMatches = (steamid) => {
     getApiToken().then((token) => {
       const options = {
         method: 'GET',
-        url: `${apiconf.get('address')}:${apiconf.get('port')}/api/matches/${steamid}`,
+        url: `http://${apiconf.get('address')}:${apiconf.get('port')}/api/matches/${steamid}`,
         headers: {
           authorization: `${token}`,
         }
@@ -130,7 +135,7 @@ const getAllUsers = (page) => {
     getApiToken().then((token) => {
       const options = {
         method: 'GET',
-        url: `${apiconf.get('address')}:${apiconf.get('port')}/api/users/${page}`,
+        url: `http://${apiconf.get('address')}:${apiconf.get('port')}/api/users/${page}`,
         headers: {
           authorization: `${token}`,
         }
@@ -156,7 +161,7 @@ const getLatestMatches = () => {
     getApiToken().then((token) => {
       const options = {
         method: 'GET',
-        url: `${apiconf.get('address')}:${apiconf.get('port')}/matches/`,
+        url: `http://${apiconf.get('address')}:${apiconf.get('port')}/matches/`,
         headers: {
           authorization: `${token}`,
         }
@@ -182,7 +187,7 @@ const getTop = () => {
     getApiToken().then((token) => {
       const options = {
         method: 'GET',
-        url: `${apiconf.get('address')}:${apiconf.get('port')}/api/top10/`,
+        url: `http://${apiconf.get('address')}:${apiconf.get('port')}/api/top10/`,
         headers: {
           authorization: `${token}`,
         }
@@ -237,8 +242,8 @@ passport.deserializeUser((obj, done) => {
 //   credentials (in this case, an OpenID identifier and profile), and invoke a
 //   callback with a user object.
 passport.use(new SteamStrategy({
-    returnURL: 'http://localhost:3000/auth/steam/return',
-    realm: 'http://localhost:3000/',
+    returnURL: `http://localhost:3000/auth/steam/return`,
+    realm: `http://localhost:3000/`,
     apiKey: config.get('steam.apikey'),
   },
   (identifier, profile, done) => {
@@ -291,11 +296,13 @@ app.get('/users/:pg', (req, res) => {
   getAllUsers(req.params.pg).then((output) => {
     res.render('users', {
       page: `${config.get('appname')} | Users`,
+      user: req.user || undefined,
       users: output,
     });
   }).catch((err) => {
     res.render('error', {
       page: `${config.get('appname')} | Error`,
+      user: req.user || undefined,
       code: 500,
       error: err,
     });
@@ -306,15 +313,17 @@ app.get('/users/:pg', (req, res) => {
 //  The profile of the logged in user
 //  req.user
 app.get('/user/me/', ensureAuthenticated, (req, res) => {
-  getUserMatches(req.user.id).then((output) => {
+  getUserProfile(req.user.id).then((output) => {
     res.render('user', {
       page: `${config.get('appname')} | ${req.user.displayName}`,
       user: req.user,
-      matches: output,
+      player: output.player,
+      matches: output.matches,
     });
   }).catch((err) => {
     res.render('error', {
       page: `${config.get('appname')} | Error`,
+      user: req.user || undefined,
       code: 500,
       error: err,
     });
@@ -327,13 +336,15 @@ app.get('/user/me/', ensureAuthenticated, (req, res) => {
 app.get('/user/:steamid', (req, res) => {
   getUserProfile(req.params.steamid).then((output) => {
     res.render('user', {
-      page: `${config.get('appname')} | ${output.user.name}`,
+      page: `${config.get('appname')} | ${output.player.name || 'Not Found'}`,
       user: output.user,
+      player: output.player,
       matches: output.matches,
     });
   }).catch((err) => {
     res.render('error', {
       page: `${config.get('appname')} | Error`,
+      user: req.user || undefined,
       code: 500,
       error: err,
     });
@@ -346,12 +357,13 @@ app.get('/top10/', (req, res) => {
   getTop().then((output) => {
     res.render('top', {
       page: `${config.get('appname')} | Top 10 Players`,
-      players: output,
       user: req.user || undefined,
+      players: output,
     });
   }).catch((err) => {
     res.render('error', {
       page: `${config.get('appname')} | Error`,
+      user: req.user || undefined,
       code: 500,
       error: err,
     });
@@ -364,12 +376,13 @@ app.get('/matches/', (req, res) => {
   getLatestMatches().then((output) => {
     res.render('match', {
       page: `${config.get('appname')} | Recent Matches`,
-      matches: output,
       user: req.user || undefined,
+      matches: output,
     });
   }).catch((err) => {
     res.render('error', {
       page: `${config.get('appname')} | Error`,
+      user: req.user || undefined,
       code: 500,
       error: err,
     });
@@ -383,12 +396,61 @@ app.get('/matches/:steamid', (req, res) => {
   getUserMatches().then((output) => {
     res.render('match', {
       page: `${config.get('appname')} | User Matches`,
-      matches: output,
       user: req.user || undefined,
+      matches: output,
     });
   }).catch((err) => {
     res.render('error', {
       page: `${config.get('appname')} | Error`,
+      user: req.user || undefined,
+      code: 500,
+      error: err,
+    });
+  });
+});
+
+// GET /link/
+//  Sends a POST request to /api/user/
+//  which will add the user to the DB
+app.get('/link/', ensureAuthenticated, (req, res) => {
+  getApiToken().then((token) => {
+    const options = {
+      method: 'POST',
+      url: `http://${apiconf.get('address')}:${apiconf.get('port')}/api/user/`,
+      json: true,
+      headers: {
+        authorization: `${token}`,
+      },
+      body: {
+        alias: req.user.displayName,
+        steamid: req.user.id,
+        avatar: req.user.photos[0].value,
+      },
+    };
+    
+    request(options).then((output) => {
+      if(output === '-1') {
+        res.render('error', {
+          page: `${config.get('appname')} | Error`,
+          user: req.user || undefined,
+          code: 500,
+          error: '-1 Query error',
+        });
+      } else {
+        res.redirect('/user/me/');
+      }
+    }).catch((err) => {
+      res.render('error', {
+        page: `${config.get('appname')} | Error`,
+        user: req.user || undefined,
+        code: 500,
+        error: err,
+      });
+    });
+  }).catch((err) => {
+    res.render('error', {
+      page: `${config.get('appname')} | Error`,
+      user: req.user || undefined,
       code: 500,
       error: err,
     });
@@ -406,7 +468,7 @@ app.get('/matches/:steamid', (req, res) => {
 //   user back to this application at /auth/steam/return
 app.get('/auth/steam', passport.authenticate('steam', { failureRedirect: '/' }),
   (req, res) => {
-    res.redirect('/');
+    res.redirect('/link/');
   }
 );
 
@@ -418,7 +480,7 @@ app.get('/auth/steam', passport.authenticate('steam', { failureRedirect: '/' }),
 app.get('/auth/steam/return',
   passport.authenticate('steam', { failureRedirect: '/' }),
   (req, res) => {
-    res.redirect('/');
+    res.redirect('/link/');
 });
 
 

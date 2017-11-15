@@ -63,10 +63,11 @@ app.get('/api/authorized/', (req, res) => {
 // GET /api/users/
 //  Will get the user with the corresponding
 //  steamid from the database
-app.get('/api/users/:pg', (req, res) => {
-  logger.log('info', 'GET /api/users/');
+app.get('/api/users/:pg', (req, res) => { // POTENTIALLY UNSAFE!!!
+  logger.log('info', `GET /api/users/${req.params.pg}`);
+  const offset = 0+parseInt(req.params.pg)*100;
   const query = `SELECT * FROM users WHERE steamid = ${mysql.escape(req.params.steamid)}
-                LIMIT 100 OFFSET0+${mysql.escape(req.params.pg)}*100}`;
+                LIMIT 100 OFFSET ${offset}`;
   
   con.query(query, (err, results) => {
     if (err) {
@@ -82,20 +83,19 @@ app.get('/api/users/:pg', (req, res) => {
 //  Will get the user with the corresponding
 //  steamid from the database
 app.get('/api/user/:steamid', (req, res) => {
-  logger.log('info', 'GET /api/user/:steamid');
+  logger.log('info', `GET /api/user/${req.params.steamid}`);
 
   var user = {};
-  
-  const query = `SELECT * FROM users, mgemod_stats WHERE users.steamid = ${mysql.escape(req.params.steamid)}
-                AND mgemod_stats.steamid = ${mysql.escape(req.params.steamid)}`;
+
+  const query = `SELECT * FROM users WHERE steamid = ${mysql.escape(req.params.steamid)}`;
   
   con.query(query, (err, results) => {
     if (err) {
       logger.log('error', err);
       res.send('-1');
     } else {
-      logger.log('info', results); // DEBUG
-      user.user = results
+      user.user = results[0];
+
       const query2 = `SELECT * FROM mgemod_duels
                       WHERE winner = ${mysql.escape(req.params.steamid)}
                       OR loser = ${mysql.escape(req.params.steamid)}`;
@@ -105,9 +105,20 @@ app.get('/api/user/:steamid', (req, res) => {
           logger.log('error', err);
           res.send('-1');
         } else {
-          user.matches = results2;
-          res.send(user);
-          // res.send(JSON.stringify(user));
+          user.matches = results2[0];
+
+          const query3 = `SELECT * FROM mgemod_stats WHERE steamid = ${mysql.escape(req.params.steamid)}`;
+          
+          con.query(query3, (err, results3) => {
+            if (err) {
+              logger.log('error', err);
+              res.send('-1');
+            } else {
+              user.player = results3[0];
+              logger.log('info', user); // DEBUG
+              res.send(user);
+            }
+          });
         }
       });
     }
@@ -133,7 +144,7 @@ app.get('/api/matches/', (req, res) => {
 // GET /api/matches/:steamid
 //  Lists past 100 matches
 app.get('/api/matches/:steamid', (req, res) => {
-  logger.log('info', 'GET /api/matches/:steamid');
+  logger.log('info', `GET /api/matches/${req.params.steamid}`);
 
   const query = `SELECT * FROM mgemod_duels
                 WHERE winner = ${mysql.escape(req.params.steamid)}
@@ -176,7 +187,7 @@ app.post('/api/user/', (req, res) => {
 
   const query = `INSERT INTO users (alias, steamid, avatar)
                 VALUES ( ${mysql.escape(alias)}, ${mysql.escape(steamid)}, ${mysql.escape(avatar)})
-                ON DUPLICATE KEY UPDATE alias=${mysql.escape(alias)}, avatar=${mysql.escape(avatar)}`;
+                ON DUPLICATE KEY UPDATE avatar=${mysql.escape(avatar)}`;
 
   con.query(query, (err, result) => {
     if (err) {

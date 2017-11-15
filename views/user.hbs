@@ -1,0 +1,7 @@
+{{#if player}}
+  <image src="{{user.avatar}}" onerror="this.src='/img/blank.png'" alt="Profile Avatar"/>
+  <p class="title">{{player.name}}</p>
+{{else}}
+  <p>User not found</p>
+  {{player.name}}
+{{/if}}
