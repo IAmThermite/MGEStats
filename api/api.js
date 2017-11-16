@@ -60,14 +60,13 @@ app.get('/api/authorized/', (req, res) => {
   res.send('AUTHORIZED');
 });
 
-// GET /api/users/
+// GET /api/users/:pg
 //  Will get the user with the corresponding
 //  steamid from the database
 app.get('/api/users/:pg', (req, res) => { // POTENTIALLY UNSAFE!!!
   logger.log('info', `GET /api/users/${req.params.pg}`);
-  const offset = 0+parseInt(req.params.pg)*100;
-  const query = `SELECT * FROM users WHERE steamid = ${mysql.escape(req.params.steamid)}
-                LIMIT 100 OFFSET ${offset}`;
+  const offset = parseInt(req.params.pg)*100;
+  const query = `SELECT * FROM users LIMIT 100 OFFSET ${offset}`;
   
   con.query(query, (err, results) => {
     if (err) {
@@ -115,7 +114,6 @@ app.get('/api/user/:steamid', (req, res) => {
               res.send('-1');
             } else {
               user.player = results3[0];
-              logger.log('info', user); // DEBUG
               res.send(user);
             }
           });
@@ -127,7 +125,7 @@ app.get('/api/user/:steamid', (req, res) => {
 
 // GET /api/matches/
 //  Lists past 100 matches
-app.get('/api/matches/', (req, res) => {
+app.get('/api/matches/', (req, res) => { // get aliases used?
   logger.log('info', 'GET /api/matches/');
 
   const query = `SELECT * FROM mgemod_duels ORDER BY id DESC LIMIT 100`;
@@ -143,12 +141,13 @@ app.get('/api/matches/', (req, res) => {
 
 // GET /api/matches/:steamid
 //  Lists past 100 matches
-app.get('/api/matches/:steamid', (req, res) => {
+app.get('/api/matches/:steamid', (req, res) => { // get aliases used?
   logger.log('info', `GET /api/matches/${req.params.steamid}`);
 
   const query = `SELECT * FROM mgemod_duels
                 WHERE winner = ${mysql.escape(req.params.steamid)}
-                OR loser = ${mysql.escape(req.params.steamid)}`; // Alter to only return last 100?
+                OR loser = ${mysql.escape(req.params.steamid)}
+                ORDER BY id DESC LIMIT 100`;
   con.query(query, (err, results) => {
     if (err) {
       logger.log('error', err);
@@ -183,11 +182,16 @@ app.post('/api/user/', (req, res) => {
 
   const alias = req.body.alias;
   const steamid = req.body.steamid;
-  const avatar = req.body.avatar;
+  const avatar_sm = req.body.avatars[0].value;
+  const avatar_m = req.body.avatars[1].value;
+  const avatar_lg = req.body.avatars[2].value;
 
-  const query = `INSERT INTO users (alias, steamid, avatar)
-                VALUES ( ${mysql.escape(alias)}, ${mysql.escape(steamid)}, ${mysql.escape(avatar)})
-                ON DUPLICATE KEY UPDATE avatar=${mysql.escape(avatar)}`;
+  const query = `INSERT INTO users (alias, steamid, avatar_sm, avatar_m, avatar_lg)
+                VALUES ( ${mysql.escape(alias)}, ${mysql.escape(steamid)},
+                ${mysql.escape(avatar_sm)}, ${mysql.escape(avatar_m)}, ${mysql.escape(avatar_lg)})
+                ON DUPLICATE KEY UPDATE avatar_sm=${mysql.escape(avatar_sm)},
+                avatar_m=${mysql.escape(avatar_m)},
+                avatar_lg=${mysql.escape(avatar_lg)}`;
 
   con.query(query, (err, result) => {
     if (err) {

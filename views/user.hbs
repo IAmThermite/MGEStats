@@ -1,7 +1,37 @@
 {{#if player}}
-  <image src="{{user.avatar}}" onerror="this.src='/img/blank.png'" alt="Profile Avatar"/>
-  <p class="title">{{player.name}}</p>
+  <div class="user">
+    <div class="info">
+      <table>
+        <tr>
+          <td><image src="{{dbplayer.avatar}}" onerror="this.src='/img/avatar_default.png'" alt="Avatar" /></td>
+          <td class="title">{{player.name}}</td>
+        </tr>
+        <tr>
+          <td class="large">Rating: {{player.rating}}</td>
+          <td class="large">Wins: {{player.wins}}</td>
+          <td class="large">Losses: {{player.losses}}</td>
+        </tr>
+        <tr class="links">
+          <td><a href="http://steamcommunity.com/profiles/{{player.steamid}}">Steam</a></td>
+          <td><a href="http://logs.tf/profile/{{player.steamid}}">Logs.tf</a></td>
+        </tr>
+      </table>>
+    </div>
+    <div class="matches">
+      {{#each matches}}
+        <tr>
+          <td>{{this.arenaname}}</td>
+          <td>{{this.gametype}}</td>
+          <td>
+            <a href="/user/{{this.winner}}">{{this.winner}}</a>
+            {{this.winnerscore}} - 
+            {{this.looserscore}}
+            <a href="/user/{{this.looser}}">{{this.looser}}</a>
+          </td>
+        </tr>
+      {{/each}}
+    </div>
+  </div>
 {{else}}
-  <p>User not found</p>
-  {{player.name}}
+  <p class="title">User not found.</p>
 {{/if}}

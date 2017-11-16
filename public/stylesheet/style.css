@@ -41,3 +41,27 @@ p .title {
   margin: 10px 0px;
   border-radius: 5px;
 }
+
+.item-row {
+  border: 2px solid #000;
+  margin-top: 5px;
+  padding: 0px;
+}
+.item-row .avatar img {
+  border: 1px solid #000;
+  border-radius: 10%;
+  padding: 0px;
+}
+.item-row .info p {
+  margin: 0;
+  padding: 0px;
+}
+
+.user .info {
+  border: 2px solid #000;
+  border-radius: 2px;
+}
+
+.title {
+  font-size: 40px;
+}

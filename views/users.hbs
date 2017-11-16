@@ -1,0 +1,19 @@
+{{#each users}}
+  <div class="item-row">
+    <table>
+      <tr>
+        <td>
+          <div class="avatar">
+            <img src="{{this.avatar_m}}" onerror="this.src='/img/avatar_default.png'" alt="Avatar" />
+          </div>
+        </td>
+        <td>
+          <div class="info">
+            <p><a href="/user/{{this.steamid}}">{{this.alias}}</a></p>
+            <p><a href="http://steamcommunity.com/profiles/{{this.steamid}}">[{{this.steamid}}]</a></p>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+{{/each}}

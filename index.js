@@ -93,7 +93,12 @@ const getUserProfile = (steamid) => {
         if(body === '-1') {
           reject('-1 Bad query.');
         } else {
-          fufill(body);
+          try {
+            response = JSON.parse(body);
+            fufill(response);
+          } catch(e) {
+            reject('-2 Internal JSON parse error');
+          }
         }
       }).catch((err) => {
         reject('2 Bad API Auth');
@@ -119,7 +124,12 @@ const getUserMatches = (steamid) => {
         if(body === '-1') {
           reject('-1 Bad query.');
         } else {
-          fufill(body);
+          try {
+            response = JSON.parse(body);
+            fufill(response);
+          } catch(e) {
+            reject('-2 Internal JSON parse error');
+          }
         }
       }).catch((err) => {
         reject('2 Bad API Auth');
@@ -145,7 +155,12 @@ const getAllUsers = (page) => {
         if(body === '-1') {
           reject('-1 Bad query.');
         } else {
-          fufill(body);
+          try {
+            response = JSON.parse(body);
+            fufill(response);
+          } catch(e) {
+            reject('-2 Internal JSON parse error');
+          }
         }
       }).catch((err) => {
         reject('2 Bad API Auth');
@@ -171,7 +186,12 @@ const getLatestMatches = () => {
         if(body === '-1') {
           reject('-1 Bad query.');
         } else {
-          fufill(body);
+          try {
+            response = JSON.parse(body);
+            fufill(response);
+          } catch(e) {
+            reject('-2 Internal JSON parse error');
+          }
         }
       }).catch((err) => {
         reject('2 Bad API Auth');
@@ -197,7 +217,12 @@ const getTop = () => {
         if(body === '-1') {
           reject('-1 Bad query.');
         } else {
-          fufill(body);
+          try {
+            response = JSON.parse(body);
+            fufill(response);
+          } catch(e) {
+            reject('-2 Internal JSON parse error');
+          }
         }
       }).catch((err) => {
         reject('2 Bad API Auth');
@@ -270,10 +295,19 @@ app.use(passport.session());
 // MAIN ROUTES
 //
 app.get('/', (req, res) => {
-  res.render('home', {
-    page: `${config.get('appname')} | Home`,
-    user: req.user || undefined,
-  })
+  getLatestMatches().then((output) => {
+    res.render('home', {
+      page: `${config.get('appname')} | Home`,
+      matches: output,
+      user: req.user || undefined,
+    });
+  }).catch((err) => {
+    res.render('home', {
+      page: `${config.get('appname')} | Home`,
+      matches: undefined,
+      user: req.user || undefined,
+    });
+  });
 });
 
 app.get('/login/', (req, res) => {
@@ -317,6 +351,7 @@ app.get('/user/me/', ensureAuthenticated, (req, res) => {
     res.render('user', {
       page: `${config.get('appname')} | ${req.user.displayName}`,
       user: req.user,
+      dbuser: output.user,
       player: output.player,
       matches: output.matches,
     });
@@ -336,8 +371,9 @@ app.get('/user/me/', ensureAuthenticated, (req, res) => {
 app.get('/user/:steamid', (req, res) => {
   getUserProfile(req.params.steamid).then((output) => {
     res.render('user', {
-      page: `${config.get('appname')} | ${output.player.name || 'Not Found'}`,
-      user: output.user,
+      page: `${config.get('appname')} | ${output.user.alias || 'Not Found'}`,
+      user: req.user || undefined,
+      dbuser: output.user,
       player: output.player,
       matches: output.matches,
     });
@@ -359,25 +395,6 @@ app.get('/top10/', (req, res) => {
       page: `${config.get('appname')} | Top 10 Players`,
       user: req.user || undefined,
       players: output,
-    });
-  }).catch((err) => {
-    res.render('error', {
-      page: `${config.get('appname')} | Error`,
-      user: req.user || undefined,
-      code: 500,
-      error: err,
-    });
-  });
-});
-
-// GET /matches/
-//  Will display the last 100 matches played
-app.get('/matches/', (req, res) => {
-  getLatestMatches().then((output) => {
-    res.render('match', {
-      page: `${config.get('appname')} | Recent Matches`,
-      user: req.user || undefined,
-      matches: output,
     });
   }).catch((err) => {
     res.render('error', {
@@ -424,7 +441,7 @@ app.get('/link/', ensureAuthenticated, (req, res) => {
       body: {
         alias: req.user.displayName,
         steamid: req.user.id,
-        avatar: req.user.photos[0].value,
+        avatars: req.user.photos,
       },
     };
     

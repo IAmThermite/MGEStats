@@ -1,5 +1,21 @@
 {{#if user}}
   <p class="title">Welcome {{user.displayName}}.</p>
 {{else}}
-  <p>Welcome Guest.</p>
+  <p><a href="/login/">Welcome Guest.</a></p>
+  <div class="matches">
+    <table>
+      {{#each matches}}
+        <tr>
+          <td>{{this.arenaname}}</td>
+          <td>{{this.gametype}}</td>
+          <td>
+            <a href="/user/{{this.winner}}">{{this.winner}}</a>
+            {{this.winnerscore}} - 
+            {{this.looserscore}}
+            <a href="/user/{{this.looser}}">{{this.looser}}</a>
+          </td>
+        </tr>
+      {{/each}}
+    </table>
+  </div>
 {{/if}}
