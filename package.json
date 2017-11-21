@@ -30,6 +30,7 @@
     "passport-steam": "^1.0.8",
     "request": "^2.83.0",
     "request-promise": "^4.2.2",
+    "steam-userinfo": "^1.1.5",
     "winston": "^2.4.0"
   }
 }

@@ -1,4 +1,8 @@
 {
+  "steam": {
+    "apikey": "SteamAPIKey"
+  },
+  
   "database": {
     "address": "127.0.0.1",
     "user": "username",

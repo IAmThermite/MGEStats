@@ -5,8 +5,12 @@ const config = require('config');
 const jwt = require('express-jwt');
 const jwks = require('jwks-rsa');
 const winston = require('winston');
+const steamuserinfo = require('steam-userinfo');
 
 const app = express();
+
+
+steamuserinfo.setup(config.get('steam.apikey'));
 
 
 const logger = new(winston.Logger)({
@@ -65,14 +69,24 @@ app.get('/api/authorized/', (req, res) => {
 //  steamid from the database
 app.get('/api/users/:pg', (req, res) => { // POTENTIALLY UNSAFE!!!
   logger.log('info', `GET /api/users/${req.params.pg}`);
+
   const offset = parseInt(req.params.pg)*100;
-  const query = `SELECT * FROM users LIMIT 100 OFFSET ${offset}`;
-  
+  const query = `SELECT * FROM mgemod_stats ORDER BY name LIMIT 100 OFFSET ${offset}`;  
   con.query(query, (err, results) => {
     if (err) {
       logger.log('error', err);
       res.send('-1');
     } else {
+      for(var i = 0; i < results.length; i++) {
+        steamuserinfo.getUserInfo(results[i].steamid, (err, data) => {
+          if(err) {
+            logger.log('error', err);
+            res.send('-3');
+          } else {
+            results[i].info = data.response[0];
+          }
+        });
+      }
       res.send(results);
     }
   });
@@ -86,8 +100,7 @@ app.get('/api/user/:steamid', (req, res) => {
 
   var user = {};
 
-  const query = `SELECT * FROM users WHERE steamid = ${mysql.escape(req.params.steamid)}`;
-  
+  const query = `SELECT * FROM mgemod_stats WHERE steamid = ${mysql.escape(req.params.steamid)}`;
   con.query(query, (err, results) => {
     if (err) {
       logger.log('error', err);
@@ -98,22 +111,18 @@ app.get('/api/user/:steamid', (req, res) => {
       const query2 = `SELECT * FROM mgemod_duels
                       WHERE winner = ${mysql.escape(req.params.steamid)}
                       OR loser = ${mysql.escape(req.params.steamid)}`;
-      
       con.query(query2, (err, results2) => {
         if (err) {
           logger.log('error', err);
           res.send('-1');
         } else {
           user.matches = results2[0];
-
-          const query3 = `SELECT * FROM mgemod_stats WHERE steamid = ${mysql.escape(req.params.steamid)}`;
-          
-          con.query(query3, (err, results3) => {
-            if (err) {
+          steamuserinfo.getUserInfo(user.user.steamid, (err, data) => {
+            if(err) {
               logger.log('error', err);
-              res.send('-1');
+              res.send('-3');
             } else {
-              user.player = results3[0];
+              user.info = data.response[0];
               res.send(user);
             }
           });
@@ -177,6 +186,7 @@ app.get('/api/top10/', (req, res) => {
 
 // POST /api/user/
 //  Updates/adds user to db
+//  DEPRECATED
 app.post('/api/user/', (req, res) => {
   logger.log('info', 'POST /api/user');
 
@@ -211,8 +221,8 @@ app.post('/api/users/search/', (req, res) => {
   const search = `%${req.body.query}%`;
   const sortby = req.body.sortby;
 
-  var query = `SELECT * FROM users
-              WHERE alias LIKE ${mysql.escape(search)}`;
+  var query = `SELECT * FROM mgemod_stats
+              WHERE name LIKE ${mysql.escape(search)}`;
 
   con.query(query, (err, result) => {
     if (err) {

@@ -351,7 +351,7 @@ app.get('/user/me/', ensureAuthenticated, (req, res) => {
     res.render('user', {
       page: `${config.get('appname')} | ${req.user.displayName}`,
       user: req.user,
-      dbuser: output.user,
+      info: output.info,
       player: output.player,
       matches: output.matches,
     });

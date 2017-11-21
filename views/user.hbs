@@ -3,7 +3,7 @@
     <div class="info">
       <table>
         <tr>
-          <td><image src="{{dbplayer.avatar}}" onerror="this.src='/img/avatar_default.png'" alt="Avatar" /></td>
+          <td><image src="{{info.avatar}}" onerror="this.src='/img/avatar_default.png'" alt="Avatar" /></td>
           <td class="title">{{player.name}}</td>
         </tr>
         <tr>
@@ -24,8 +24,7 @@
           <td>{{this.gametype}}</td>
           <td>
             <a href="/user/{{this.winner}}">{{this.winner}}</a>
-            {{this.winnerscore}} - 
-            {{this.looserscore}}
+            {{this.winnerscore}} - {{this.looserscore}}
             <a href="/user/{{this.looser}}">{{this.looser}}</a>
           </td>
         </tr>
