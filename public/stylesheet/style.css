@@ -6,6 +6,11 @@ p .title {
   font-size: 48px;
 }
 
+.avatar {
+  border: 1px solid #000000;
+  border-radius: 5%;
+}
+
 .container {
   background-color: rgb(129, 226, 255);
   padding: 20px;
@@ -47,21 +52,34 @@ p .title {
   margin-top: 5px;
   padding: 0px;
 }
-.item-row .avatar img {
-  border: 1px solid #000;
-  border-radius: 10%;
-  padding: 0px;
-}
 .item-row .info p {
   margin: 0;
   padding: 0px;
 }
 
 .user .info {
+  margin-top: 5px;
   border: 2px solid #000;
-  border-radius: 2px;
+  border-radius: 5px;
+}
+.user .matches {
+  margin-top: 10px;
+  padding: 5px;
+  border: 2px solid #000;
+  border-radius: 5px;
 }
 
 .title {
   font-size: 40px;
 }
+
+.subtitle {
+  font-size: 20px;
+}
+/* <td>
+<p>
+  Winner: <a href="/user/{{this.winner}}">{{this.winner}}</a>
+  Loser: <a href="/user/{{this.loser}}">{{this.loser}}</a>
+</p>
+<p>Score: {{this.winnerscore}} - {{this.loserscore}}</p>
+</td> */

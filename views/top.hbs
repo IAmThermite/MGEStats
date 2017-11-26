@@ -1,0 +1,16 @@
+{{#each players}}
+  <div class="item-row">
+    <table>
+      <tr>
+        <td class="title">{{@key}}</td>
+        <td>
+          <div class="info">
+            <p><a href="/user/{{this.steamid}}">{{this.name}}</a></p>
+            <p>Wins: {{this.wins}} Losses: {{this.losses}}</p>
+            <p>ELO: {{this.rating}}</p>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+{{/each}}

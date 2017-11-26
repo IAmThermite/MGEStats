@@ -3,8 +3,8 @@
     <div class="info">
       <table>
         <tr>
-          <td><image src="{{info.avatar}}" onerror="this.src='/img/avatar_default.png'" alt="Avatar" /></td>
-          <td class="title">{{player.name}}</td>
+          <td><image class="avatar" src="{{info.avatarfull}}" onerror="this.src='/img/avatar_default.png'" alt="Avatar" /></td>
+          <td class="title" colspan="2">{{player.name}}<br /><span class="subtitle">{{player.steamid}}</span></td>
         </tr>
         <tr>
           <td class="large">Rating: {{player.rating}}</td>
@@ -12,22 +12,29 @@
           <td class="large">Losses: {{player.losses}}</td>
         </tr>
         <tr class="links">
-          <td><a href="http://steamcommunity.com/profiles/{{player.steamid}}">Steam</a></td>
-          <td><a href="http://logs.tf/profile/{{player.steamid}}">Logs.tf</a></td>
+          <td><a href="http://steamcommunity.com/profiles/{{steamid64}}">Steam</a></td>
+          <td><a href="http://logs.tf/profile/{{steamid64}}">Logs.tf</a></td>
         </tr>
-      </table>>
+      </table>
     </div>
+
     <div class="matches">
+      <p class="title">Latest Matches</p>
       {{#each matches}}
-        <tr>
-          <td>{{this.arenaname}}</td>
-          <td>{{this.gametype}}</td>
-          <td>
-            <a href="/user/{{this.winner}}">{{this.winner}}</a>
-            {{this.winnerscore}} - {{this.looserscore}}
-            <a href="/user/{{this.looser}}">{{this.looser}}</a>
-          </td>
-        </tr>
+        <div class="item-row">
+          <table>
+            <tr>
+              <td>{{this.arenaname}}</td>
+              <td>
+                <p>
+                  Winner: <a href="/user/{{this.winner}}">{{this.winner}}</a>
+                  Loser: <a href="/user/{{this.loser}}">{{this.loser}}</a>
+                </p>
+                <p>Score: {{this.winnerscore}} - {{this.loserscore}}</p>
+                </td>
+            </tr>
+          </table>
+        </div>
       {{/each}}
     </div>
   </div>

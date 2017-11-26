@@ -3,14 +3,9 @@
     <table>
       <tr>
         <td>
-          <div class="avatar">
-            <img src="{{this.info.avatarmedium}}" onerror="this.src='/img/avatar_default.png'" alt="Avatar" />
-          </div>
-        </td>
-        <td>
           <div class="info">
             <p><a href="/user/{{this.steamid}}">{{this.name}}</a></p>
-            <p><a href="http://steamcommunity.com/profiles/{{this.steamid}}">[{{this.steamid}}]</a></p>
+            <p>Wins: {{this.wins}} Losses: {{this.losses}}</p>
             <p>ELO: {{this.rating}}</p>
           </div>
         </td>

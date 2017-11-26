@@ -6,6 +6,7 @@ const jwt = require('express-jwt');
 const jwks = require('jwks-rsa');
 const winston = require('winston');
 const steamuserinfo = require('steam-userinfo');
+const SteamID = require('steamid');
 
 const app = express();
 
@@ -56,13 +57,20 @@ const con = mysql.createConnection({
   database: dbconf.get('db'),
 });
 
-// GET /api/authorized/
-//  A check to see if the API can be accessed
-app.get('/api/authorized/', (req, res) => {
-  logger.log('info', 'GET /api/authorized/');
 
-  res.send('AUTHORIZED');
-});
+const getSteamInfo = (steamid) => {
+  return new Promise((fufill, reject) => {
+    const sid = new SteamID(steamid);
+    steamuserinfo.getUserInfo(sid.getSteamID64(), (err, data) => {
+      if(err) {
+        reject('-3 Steam info failure');
+      } else {
+        fufill(data.response.players[0]);
+      }
+    });
+  });
+}
+
 
 // GET /api/users/:pg
 //  Will get the user with the corresponding
@@ -71,22 +79,12 @@ app.get('/api/users/:pg', (req, res) => { // POTENTIALLY UNSAFE!!!
   logger.log('info', `GET /api/users/${req.params.pg}`);
 
   const offset = parseInt(req.params.pg)*100;
-  const query = `SELECT * FROM mgemod_stats ORDER BY name LIMIT 100 OFFSET ${offset}`;  
+  const query = `SELECT * FROM mgemod_stats ORDER BY name LIMIT 100 OFFSET ${offset}`;
   con.query(query, (err, results) => {
     if (err) {
       logger.log('error', err);
       res.send('-1');
     } else {
-      for(var i = 0; i < results.length; i++) {
-        steamuserinfo.getUserInfo(results[i].steamid, (err, data) => {
-          if(err) {
-            logger.log('error', err);
-            res.send('-3');
-          } else {
-            results[i].info = data.response[0];
-          }
-        });
-      }
       res.send(results);
     }
   });
@@ -106,23 +104,27 @@ app.get('/api/user/:steamid', (req, res) => {
       logger.log('error', err);
       res.send('-1');
     } else {
-      user.user = results[0];
+      user.player = results[0];
 
       const query2 = `SELECT * FROM mgemod_duels
                       WHERE winner = ${mysql.escape(req.params.steamid)}
-                      OR loser = ${mysql.escape(req.params.steamid)}`;
+                      OR loser = ${mysql.escape(req.params.steamid)}
+                      ORDER BY gametime DESC`;
       con.query(query2, (err, results2) => {
         if (err) {
           logger.log('error', err);
           res.send('-1');
         } else {
-          user.matches = results2[0];
-          steamuserinfo.getUserInfo(user.user.steamid, (err, data) => {
+          user.matches = results2;
+          console.log(results2);
+
+          const sid = new SteamID(req.params.steamid);
+          steamuserinfo.getUserInfo(sid.getSteamID64(), (err, data) => {
             if(err) {
               logger.log('error', err);
               res.send('-3');
             } else {
-              user.info = data.response[0];
+              user.info = data.response.players[0];
               res.send(user);
             }
           });

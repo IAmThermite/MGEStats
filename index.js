@@ -8,6 +8,7 @@ const cookieParser = require('cookie-parser');
 const passport = require('passport');
 const SteamStrategy = require('passport-steam').Strategy;
 const winston = require('winston');
+const SteamID = require('steamid');
 
 const app = express();
 
@@ -101,7 +102,7 @@ const getUserProfile = (steamid) => {
           }
         }
       }).catch((err) => {
-        reject('2 Bad API Auth');
+        reject('2 Cannot connect to API');
       });
     }).catch((err) => {
       reject('1 Cannot connect to API');
@@ -132,7 +133,7 @@ const getUserMatches = (steamid) => {
           }
         }
       }).catch((err) => {
-        reject('2 Bad API Auth');
+        reject('2 Cannot connect to API');
       });
     }).catch(() => {
       reject('1 Cannot connect to API');
@@ -163,7 +164,7 @@ const getAllUsers = (page) => {
           }
         }
       }).catch((err) => {
-        reject('2 Bad API Auth');
+        reject('2 Cannot connect to API');
       });
     }).catch((err) => {
       reject('1 Cannot connect to API');
@@ -194,7 +195,7 @@ const getLatestMatches = () => {
           }
         }
       }).catch((err) => {
-        reject('2 Bad API Auth');
+        reject('2 Cannot connect to API');
       });
     }).catch((err) => {
       reject('1 Cannot connect to API');
@@ -225,7 +226,7 @@ const getTop = () => {
           }
         }
       }).catch((err) => {
-        reject('2 Bad API Auth');
+        reject('2 Cannot connect to API');
       });
     }).catch((err) => {
       reject('1 Cannot connect to API');
@@ -347,13 +348,15 @@ app.get('/users/:pg', (req, res) => {
 //  The profile of the logged in user
 //  req.user
 app.get('/user/me/', ensureAuthenticated, (req, res) => {
-  getUserProfile(req.user.id).then((output) => {
+  const sid = new SteamID(req.user.id);
+  getUserProfile(sid.getSteam2RenderedID()).then((output) => {
     res.render('user', {
       page: `${config.get('appname')} | ${req.user.displayName}`,
       user: req.user,
       info: output.info,
       player: output.player,
       matches: output.matches,
+      steamid64: req.user.id,
     });
   }).catch((err) => {
     res.render('error', {
@@ -369,13 +372,15 @@ app.get('/user/me/', ensureAuthenticated, (req, res) => {
 //  Will locate the profile of the corresponding user
 //  with parameter :steamid
 app.get('/user/:steamid', (req, res) => {
+  const sid = new SteamID(req.params.steamid);
   getUserProfile(req.params.steamid).then((output) => {
     res.render('user', {
-      page: `${config.get('appname')} | ${output.user.alias || 'Not Found'}`,
+      page: `${config.get('appname')} | ${output.player.name || 'Not Found'}`,
       user: req.user || undefined,
-      dbuser: output.user,
+      info: output.info,
       player: output.player,
       matches: output.matches,
+      steamid64: sid.getSteamID64(),
     });
   }).catch((err) => {
     res.render('error', {
