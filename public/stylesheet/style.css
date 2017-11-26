@@ -1,9 +1,11 @@
-a {
-  color: #000;
+@import url('https://fonts.googleapis.com/css?family=Roboto');
+
+p, td li {
+  font-family: 'Roboto', sans-serif;
 }
 
-p .title {
-  font-size: 48px;
+a {
+  color: #000;
 }
 
 .avatar {
@@ -75,11 +77,5 @@ p .title {
 
 .subtitle {
   font-size: 20px;
+  color: #333; 
 }
-/* <td>
-<p>
-  Winner: <a href="/user/{{this.winner}}">{{this.winner}}</a>
-  Loser: <a href="/user/{{this.loser}}">{{this.loser}}</a>
-</p>
-<p>Score: {{this.winnerscore}} - {{this.loserscore}}</p>
-</td> */

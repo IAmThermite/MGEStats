@@ -177,7 +177,7 @@ const getLatestMatches = () => {
     getApiToken().then((token) => {
       const options = {
         method: 'GET',
-        url: `http://${apiconf.get('address')}:${apiconf.get('port')}/matches/`,
+        url: `http://${apiconf.get('address')}:${apiconf.get('port')}/api/matches/`,
         headers: {
           authorization: `${token}`,
         }
@@ -303,10 +303,11 @@ app.get('/', (req, res) => {
       user: req.user || undefined,
     });
   }).catch((err) => {
-    res.render('home', {
-      page: `${config.get('appname')} | Home`,
-      matches: undefined,
+    res.render('error', {
+      page: `${config.get('appname')} | Error`,
       user: req.user || undefined,
+      code: 500,
+      error: err,
     });
   });
 });
@@ -432,6 +433,7 @@ app.get('/matches/:steamid', (req, res) => {
 });
 
 // GET /link/
+// DEPRECATED
 //  Sends a POST request to /api/user/
 //  which will add the user to the DB
 app.get('/link/', ensureAuthenticated, (req, res) => {
@@ -477,6 +479,15 @@ app.get('/link/', ensureAuthenticated, (req, res) => {
       error: err,
     });
   });
+});
+
+
+// POST /search/
+//  Sends a POST request to /api/search
+//  which returns users with a similar
+//  alias to the search provided
+app.post('/search/', (req, res) => {
+  res.redirect('/');
 });
 
 //

@@ -75,7 +75,7 @@ const getSteamInfo = (steamid) => {
 // GET /api/users/:pg
 //  Will get the user with the corresponding
 //  steamid from the database
-app.get('/api/users/:pg', (req, res) => { // POTENTIALLY UNSAFE!!!
+app.get('/api/users/:pg', (req, res) => { // POTENTIALLY UNSAFE??!!
   logger.log('info', `GET /api/users/${req.params.pg}`);
 
   const offset = parseInt(req.params.pg)*100;
@@ -106,10 +106,11 @@ app.get('/api/user/:steamid', (req, res) => {
     } else {
       user.player = results[0];
 
-      const query2 = `SELECT * FROM mgemod_duels
-                      WHERE winner = ${mysql.escape(req.params.steamid)}
-                      OR loser = ${mysql.escape(req.params.steamid)}
-                      ORDER BY gametime DESC`;
+      const query2 = `SELECT mgemod_duels.winnerscore, mgemod_duels.loserscore, mgemod_duels.arenaname, mgemod_stats.name, mgemod_stats2.name name2 FROM mgemod_duels
+                      INNER JOIN mgemod_stats ON mgemod_duels.winner = mgemod_stats.steamid
+                      INNER JOIN mgemod_stats mgemod_stats2 ON mgemod_duels.loser = mgemod_stats2.steamid
+                      WHERE mgemod_duels.winner = ${mysql.escape(req.params.steamid)} OR mgemod_duels.loser = ${mysql.escape(req.params.steamid)}
+                      ORDER BY mgemod_duels.gametime DESC LIMIT 100`;
       con.query(query2, (err, results2) => {
         if (err) {
           logger.log('error', err);
@@ -139,7 +140,10 @@ app.get('/api/user/:steamid', (req, res) => {
 app.get('/api/matches/', (req, res) => { // get aliases used?
   logger.log('info', 'GET /api/matches/');
 
-  const query = `SELECT * FROM mgemod_duels ORDER BY id DESC LIMIT 100`;
+  const query = `SELECT mgemod_duels.winner, mgemod_duels.loser, mgemod_duels.winnerscore, mgemod_duels.loserscore, mgemod_duels.arenaname, mgemod_stats.name, mgemod_stats2.name name2 FROM mgemod_duels
+                INNER JOIN mgemod_stats ON mgemod_duels.winner = mgemod_stats.steamid
+                INNER JOIN mgemod_stats mgemod_stats2 ON mgemod_duels.loser = mgemod_stats2.steamid
+                ORDER BY mgemod_duels.gametime DESC LIMIT 100`;
   con.query(query, (err, results) => {
     if (err) {
       logger.log('error', err);
@@ -155,10 +159,11 @@ app.get('/api/matches/', (req, res) => { // get aliases used?
 app.get('/api/matches/:steamid', (req, res) => { // get aliases used?
   logger.log('info', `GET /api/matches/${req.params.steamid}`);
 
-  const query = `SELECT * FROM mgemod_duels
-                WHERE winner = ${mysql.escape(req.params.steamid)}
-                OR loser = ${mysql.escape(req.params.steamid)}
-                ORDER BY id DESC LIMIT 100`;
+  const query = `SELECT mgemod_duels.winner, mgemod_duels.loser, mgemod_duels.winnerscore, mgemod_duels.loserscore, mgemod_duels.arenaname, mgemod_stats.name, mgemod_stats2.name name2 FROM mgemod_duels
+                INNER JOIN mgemod_stats ON mgemod_duels.winner = mgemod_stats.steamid
+                INNER JOIN mgemod_stats mgemod_stats2 ON mgemod_duels.loser = mgemod_stats2.steamid
+                WHERE mgemod_duels.winner = ${mysql.escape(req.params.steamid)} OR mgemod_duels.loser = ${mysql.escape(req.params.steamid)}
+                ORDER BY mgemod_duels.gametime DESC LIMIT 100`;
   con.query(query, (err, results) => {
     if (err) {
       logger.log('error', err);
